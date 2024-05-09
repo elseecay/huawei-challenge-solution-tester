@@ -187,11 +187,7 @@ def main():
 
 
 def input_generator_uniform200(n: int) -> List[float]:
-    numbers = list()
-    for _ in range(n):
-        x = random.uniform(-1e+200, +1e+200)
-        numbers.append(x)
-    return numbers
+    return [random.uniform(-1e+200, +1e+200) for _ in range(n)]
 
 
 if __name__ == "__main__":
