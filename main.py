@@ -138,7 +138,6 @@ def calculate_sequence_sum(numbers: List[float], seq: SumSequence, stat: ScoreSt
             if elem.np_type is not seq.np_type:
                 subseq_result = seq.np_type(subseq_result)
             result += subseq_result
-            stat.weight += weight
     return result
 
 
@@ -152,7 +151,7 @@ def calculate_score(numbers: List[float], seq: SumSequence):
     score.p = ((score_stat.penalty_count + 1) * score_stat.penalty_count // 2) / 20000.0
     score.c = (score.w + score.p) / (score.n - 1)
     score.d = 10.0 / math.sqrt(score.c + 0.5)
-    score.e = max(abs(sequence_sum - accurate_sum) / max(accurate_sum, 1e-200), 1e-20)
+    score.e = max(abs(sequence_sum - accurate_sum) / max(abs(accurate_sum), 1e-200), 1e-20)
     score.a = math.pow(score.e, 0.05)
     score.s = score.d / score.a
     return score
