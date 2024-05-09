@@ -15,6 +15,7 @@ CF_TEST_COUNT = 76
 
 @dataclass
 class Score:
+    g: str      # generator name
     n: int      # nums count
     w: float    # weight
     p: float    # memread penalty
@@ -60,17 +61,17 @@ def parse_solution_output(path: Path) -> SumSequence:
             return numpy.float32
         if c == "d":
             return numpy.float64
-        raise Exception("Invalid type")
+        raise RuntimeError("Invalid type")
 
     def parse_sequence(s: str, cur: int) -> Tuple[int, SumSequence]:
         if s[cur] != "{":
-            raise Exception("Expected {")
+            raise RuntimeError("Expected {")
         cur += 1
         np_type = parse_type(s[cur])
         cur += 1
         seq = SumSequence(np_type, list())
         if s[cur] != ":":
-            raise Exception("Expected :")
+            raise RuntimeError("Expected :")
         cur += 1
         while True:
             if s[cur] == "{":
@@ -84,26 +85,18 @@ def parse_solution_output(path: Path) -> SumSequence:
                     cur += 1
                 seq.items.append(index)
             else:
-                raise Exception(f"Invalid character {s[cur]}")
+                raise RuntimeError(f"Invalid character {s[cur]}")
             cur += 1
             if s[cur - 1] == "}":
                 break
             if s[cur - 1] != ",":
-                raise Exception("Expected ,")
+                raise RuntimeError("Expected ,")
         return cur, seq
 
     with open(path, "r") as f:
         content = f.read()
 
     return parse_sequence(content, 0)[1]
-
-
-def generate_input_numbers(n: int) -> List[float]:
-    numbers = list()
-    for _ in range(n):
-        x = random.uniform(-1e+10, +1e+10)
-        numbers.append(x)
-    return numbers
 
 
 def calculate_accurate_sum(numbers: List[float]) -> float:
@@ -145,10 +138,10 @@ def calculate_score(numbers: List[float], seq: SumSequence):
     accurate_sum = calculate_accurate_sum(numbers)
     score_stat = ScoreStat(0, 16, 0, 0)
     sequence_sum = calculate_sequence_sum(numbers, seq, score_stat).item()
-    score = Score(0, 0, 0, 0, 0, 0, 0, 0)
+    score = Score("", 0, 0, 0, 0, 0, 0, 0, 0)
     score.n = len(numbers)
     score.w = score_stat.weight
-    score.p = ((score_stat.penalty_count + 1) * score_stat.penalty_count // 2) / 20000.0
+    score.p = (score_stat.penalty_count + 1) * score_stat.penalty_count / 40000.0
     score.c = (score.w + score.p) / (score.n - 1)
     score.d = 10.0 / math.sqrt(score.c + 0.5)
     score.e = max(abs(sequence_sum - accurate_sum) / max(abs(accurate_sum), 1e-200), 1e-20)
@@ -157,14 +150,23 @@ def calculate_score(numbers: List[float], seq: SumSequence):
     return score
 
 
-def test_solution(args: argparse.Namespace) -> Score:
-    n = 1000
-    numbers = generate_input_numbers(n)
-    create_solution_input(args.input, numbers)
-    subprocess.run([args.executable], check=True, cwd=Path(args.executable).parent)
-    seq = parse_solution_output(args.output)
-    score = calculate_score(numbers, seq)
-    return score
+def test_solution(args: argparse.Namespace) -> List[Score]:
+    input_size = args.count
+    generators = args.generator.split("+")
+    if "all" in generators:
+        generators = [value for name, value in globals().items() if name.startswith("input_generator")]
+    else:
+        generators = list(set(globals()[f"input_generator_{name}"] for name in generators))
+    scores = list()
+    for g in generators:
+        numbers = g(input_size)
+        create_solution_input(args.input, numbers)
+        subprocess.run([args.executable], check=True, cwd=Path(args.executable).parent)
+        seq = parse_solution_output(args.output)
+        score = calculate_score(numbers, seq)
+        score.g = g.__name__[16:]
+        scores.append(score)
+    return scores
 
 
 def parse_args() -> argparse.Namespace:
@@ -172,13 +174,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-i", "--input", type=str, required=True, help="Input file path")
     parser.add_argument("-o", "--output", type=str, required=True, help="Output file path")
     parser.add_argument("-e", "--executable", type=str, required=True, help="Executable file path")
+    parser.add_argument("-g", "--generator", type=str, required=False, default="all", help="Generator name")
+    parser.add_argument("-n", "--count", type=int, required=False, default=100000, help="Input size")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    score = test_solution(args)
-    print(score.s * CF_TEST_COUNT)
+    scores = test_solution(args)
+    for s in scores:
+        print(s.g, s.s * CF_TEST_COUNT)
+
+
+def input_generator_uniform200(n: int) -> List[float]:
+    numbers = list()
+    for _ in range(n):
+        x = random.uniform(-1e+200, +1e+200)
+        numbers.append(x)
+    return numbers
 
 
 if __name__ == "__main__":
