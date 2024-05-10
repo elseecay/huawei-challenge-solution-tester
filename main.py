@@ -134,7 +134,7 @@ def calculate_sequence_sum(numbers: List[float], seq: SumSequence, stat: ScoreSt
     return result
 
 
-def calculate_score(numbers: List[float], seq: SumSequence):
+def calculate_score(numbers: List[float], seq: SumSequence) -> Score:
     accurate_sum = calculate_accurate_sum(numbers)
     score_stat = ScoreStat(0, 16, 0, 0)
     sequence_sum = calculate_sequence_sum(numbers, seq, score_stat).item()
@@ -144,8 +144,12 @@ def calculate_score(numbers: List[float], seq: SumSequence):
     score.p = (score_stat.penalty_count + 1) * score_stat.penalty_count / 40000.0
     score.c = (score.w + score.p) / (score.n - 1)
     score.d = 10.0 / math.sqrt(score.c + 0.5)
-    score.e = max(abs(sequence_sum - accurate_sum) / max(abs(accurate_sum), 1e-200), 1e-20)
-    score.a = math.pow(score.e, 0.05)
+    if math.isnan(sequence_sum) or math.isinf(sequence_sum):
+        score.e = math.inf
+        score.a = 1.0
+    else:
+        score.e = max(abs(sequence_sum - accurate_sum) / max(abs(accurate_sum), 1e-200), 1e-20)
+        score.a = math.pow(score.e, 0.05)
     score.s = score.d / score.a
     return score
 
@@ -180,14 +184,42 @@ def parse_args() -> argparse.Namespace:
 
 
 def main():
+    numpy.seterr("ignore")
     args = parse_args()
     scores = test_solution(args)
     for s in scores:
-        print(s.g, s.s * CF_TEST_COUNT)
+        print("\n", s.g, sep="")
+        print(f"N = {s.n}")
+        print(f"W = {s.w}")
+        print(f"P = {s.p}")
+        print(f"C = {s.c}")
+        print(f"E = {s.e}")
+        print(f"A = {s.a}")
+        print(f"Score = {s.s * CF_TEST_COUNT}")
 
 
-def input_generator_uniform200(n: int) -> List[float]:
-    return [random.uniform(-1e+200, +1e+200) for _ in range(n)]
+def input_generator_uniform300(n: int) -> List[float]:
+    return [random.uniform(-1e+300, +1e+300) for _ in range(n)]
+
+
+def input_generator_uniform37(n: int) -> List[float]:
+    return [random.uniform(-1e+10, +1e+10) for _ in range(n)]
+
+
+def input_generator_uniform4(n: int) -> List[float]:
+    return [random.uniform(-1e+4, +1e+4) for _ in range(n)]
+
+
+def input_generator_uniform1(n: int) -> List[float]:
+    return [random.uniform(-1.0, 1.0) for _ in range(n)]
+
+
+def input_generator_overflow32(n: int) -> List[float]:
+    return [+3e+38, +3e+38, -3e+38]
+
+
+def input_generator_overflow16(n: int) -> List[float]:
+    return [+65000.0, +65000.0, -65000.0]
 
 
 if __name__ == "__main__":
