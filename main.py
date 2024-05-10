@@ -174,7 +174,9 @@ def test_solution(args: argparse.Namespace) -> List[Score]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50))
+    formatter = lambda prog: argparse.HelpFormatter(prog, max_help_position=50)
+    usage = "python3 main.py -i input.txt -o output.txt -e solution.exe"
+    parser = argparse.ArgumentParser(usage=usage, formatter_class=formatter)
     parser.add_argument("-i", "--input", type=str, required=True, help="Input file path")
     parser.add_argument("-o", "--output", type=str, required=True, help="Output file path")
     parser.add_argument("-e", "--executable", type=str, required=True, help="Executable file path")
@@ -203,7 +205,7 @@ def input_generator_uniform300(n: int) -> List[float]:
 
 
 def input_generator_uniform37(n: int) -> List[float]:
-    return [random.uniform(-1e+10, +1e+10) for _ in range(n)]
+    return [random.uniform(-1e+37, +1e+37) for _ in range(n)]
 
 
 def input_generator_uniform4(n: int) -> List[float]:
