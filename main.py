@@ -165,7 +165,7 @@ def test_solution(args: argparse.Namespace) -> List[Score]:
     for g in generators:
         numbers = g(input_size)
         create_solution_input(args.input, numbers)
-        subprocess.run([args.executable], check=True, cwd=Path(args.executable).parent)
+        subprocess.run([args.executable], check=True)
         seq = parse_solution_output(args.output)
         score = calculate_score(numbers, seq)
         score.g = g.__name__[16:]
@@ -182,7 +182,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-e", "--executable", type=str, required=True, help="Executable file path")
     parser.add_argument("-g", "--generator", type=str, required=False, default="all", help="Generator name")
     parser.add_argument("-n", "--count", type=int, required=False, default=100000, help="Input size")
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.input = Path(args.input).resolve().absolute()
+    args.output = Path(args.output).resolve().absolute()
+    args.executable = Path(args.executable).resolve().absolute()
+    return args
 
 
 def main():
